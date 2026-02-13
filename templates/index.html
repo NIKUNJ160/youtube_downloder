@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Downloader</title>
+    <meta name="description"
+        content="Download YouTube videos and playlists in high quality with real-time progress tracking.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-card: rgba(255, 255, 255, 0.04);
+            --bg-card-hover: rgba(255, 255, 255, 0.07);
+            --bg-input: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(139, 92, 246, 0.5);
+            --text-primary: #f0f0f5;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.25);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --gradient-1: #8b5cf6;
+            --gradient-2: #ec4899;
+            --gradient-3: #06b6d4;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-gradient {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .bg-gradient::before,
+        .bg-gradient::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .bg-gradient::before {
+            width: 600px;
+            height: 600px;
+            background: var(--gradient-1);
+            top: -200px;
+            left: -100px;
+        }
+
+        .bg-gradient::after {
+            width: 500px;
+            height: 500px;
+            background: var(--gradient-2);
+            bottom: -200px;
+            right: -100px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(60px, -40px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-40px, 30px) scale(0.9);
+            }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+
+        /* Input Group */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .input-group input[type="text"] {
+            flex: 1;
+            padding: 14px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Controls row */
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .controls select {
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+            transition: border-color 0.3s;
+        }
+
+        .controls select:focus {
+            border-color: var(--border-focus);
+        }
+
+        .controls select option {
+            background: #1a1a2e;
+            color: var(--text-primary);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+            color: white;
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 30px var(--accent-glow);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .btn-pause {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-pause:hover {
+            background: rgba(245, 158, 11, 0.25);
+        }
+
+        .btn-resume {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-resume:hover {
+            background: rgba(16, 185, 129, 0.25);
+        }
+
+        /* Type badge */
+        .type-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .type-playlist {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--accent);
+        }
+
+        .type-video {
+            background: rgba(6, 182, 212, 0.15);
+            color: var(--gradient-3);
+        }
+
+        /* Playlist info card */
+        .playlist-info {
+            display: none;
+            animation: slideUp 0.4s ease;
+        }
+
+        .playlist-info.visible {
+            display: block;
+        }
+
+        .playlist-header {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .playlist-thumb {
+            width: 120px;
+            height: 68px;
+            border-radius: 10px;
+            object-fit: cover;
+            background: var(--bg-input);
+            flex-shrink: 0;
+        }
+
+        .playlist-meta h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .playlist-meta span {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        /* Video list */
+        .video-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .video-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .video-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .video-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .video-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .video-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .video-item.downloading {
+            border-color: rgba(139, 92, 246, 0.2);
+        }
+
+        .video-item.done {
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+
+        .video-item.error {
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .video-item.paused {
+            border-color: rgba(245, 158, 11, 0.2);
+        }
+
+        .video-index {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            width: 24px;
+            text-align: center;
+            flex-shrink: 0;
+            font-weight: 500;
+        }
+
+        .video-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .video-title {
+            font-size: 0.88rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 6px;
+        }
+
+        /* Progress bar */
+        .progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--gradient-1), var(--gradient-2));
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .done .progress-bar-fill {
+            background: var(--success);
+        }
+
+        .error .progress-bar-fill {
+            background: var(--error);
+        }
+
+        .paused .progress-bar-fill {
+            background: var(--warning);
+        }
+
+        /* Status badge */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .badge-queued {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-muted);
+        }
+
+        .badge-downloading {
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+
+        .badge-merging {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .badge-done {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .badge-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        .badge-paused {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .dl-stats {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: none;
+        }
+
+        .downloading .dl-stats {
+            display: block;
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: none;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: slideUp 0.4s ease;
+        }
+
+        .status-bar.visible {
+            display: block;
+        }
+
+        .status-bar.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-bar.error-bar {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        /* Pause banner */
+        .pause-banner {
+            display: none;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 16px;
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .pause-banner.visible {
+            display: block;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px 14px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .controls .btn,
+            .controls select {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .playlist-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .playlist-thumb {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 16/9;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-gradient"></div>
+    <div class="container">
+        <div class="header">
+            <h1>▶ YouTube Downloader</h1>
+            <p>Paste a video or playlist link to download</p>
+        </div>
+
+        <!-- URL Input Card -->
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Paste YouTube video or playlist URL..." autofocus>
+                <button class="btn btn-secondary" id="fetchBtn" onclick="fetchInfo()">
+                    <span id="fetchLabel">Fetch</span>
+                </button>
+            </div>
+            <div class="controls">
+                <select id="qualitySelect">
+                    <option value="best">Best Quality</option>
+                    <option value="1080">1080p</option>
+                    <option value="720" selected>720p</option>
+                    <option value="480">480p</option>
+                    <option value="audio">Audio Only (MP3)</option>
+                </select>
+                <button class="btn btn-primary" id="downloadBtn" onclick="startDownload()" disabled>
+                    ⬇ Download
+                </button>
+                <button class="btn btn-pause" id="pauseBtn" onclick="togglePause()" style="display:none;">
+                    ⏸ Pause
+                </button>
+            </div>
+        </div>
+
+        <!-- Playlist / Video Info -->
+        <div class="card playlist-info" id="playlistInfo">
+            <div class="pause-banner" id="pauseBanner">⏸ Download paused — click Resume to continue</div>
+            <div class="playlist-header">
+                <img class="playlist-thumb" id="playlistThumb" src="" alt="">
+                <div class="playlist-meta">
+                    <h3>
+                        <span id="playlistTitle"></span>
+                        <span class="type-badge" id="typeBadge"></span>
+                    </h3>
+                    <span id="playlistCount"></span>
+                </div>
+            </div>
+            <div class="video-list" id="videoList"></div>
+        </div>
+
+        <div class="status-bar" id="statusBar"></div>
+    </div>
+
+    <script>
+        let playlistData = null;
+        let currentJobId = null;
+        let isPaused = false;
+
+        async function fetchInfo() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) return;
+
+            const fetchBtn = document.getElementById('fetchBtn');
+            const fetchLabel = document.getElementById('fetchLabel');
+            fetchBtn.disabled = true;
+            fetchLabel.innerHTML = '<span class="spinner"></span>';
+            hideStatus();
+
+            try {
+                const res = await fetch('/api/info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    showStatus(data.error, 'error-bar');
+                    return;
+                }
+
+                playlistData = data;
+                renderPlaylistInfo(data);
+                document.getElementById('downloadBtn').disabled = false;
+            } catch (e) {
+                showStatus('Failed to fetch info. Check the URL.', 'error-bar');
+            } finally {
+                fetchBtn.disabled = false;
+                fetchLabel.textContent = 'Fetch';
+            }
+        }
+
+        function renderPlaylistInfo(data) {
+            const info = document.getElementById('playlistInfo');
+            document.getElementById('playlistTitle').textContent = data.title;
+
+            // Type badge
+            const badge = document.getElementById('typeBadge');
+            if (data.type === 'playlist') {
+                badge.textContent = 'Playlist';
+                badge.className = 'type-badge type-playlist';
+                document.getElementById('playlistCount').textContent = `${data.video_count} videos`;
+            } else {
+                badge.textContent = 'Video';
+                badge.className = 'type-badge type-video';
+                document.getElementById('playlistCount').textContent = 'Single video';
+            }
+
+            if (data.thumbnail) {
+                document.getElementById('playlistThumb').src = data.thumbnail;
+                document.getElementById('playlistThumb').style.display = 'block';
+            } else {
+                document.getElementById('playlistThumb').style.display = 'none';
+            }
+
+            const list = document.getElementById('videoList');
+            list.innerHTML = data.videos.map((v, i) => `
+                <div class="video-item" id="video-${i}">
+                    <span class="video-index">${i + 1}</span>
+                    <div class="video-info">
+                        <div class="video-title" title="${escapeHtml(v.title)}">${escapeHtml(v.title)}</div>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill" id="progress-${i}"></div>
+                        </div>
+                        <div class="dl-stats" id="stats-${i}"></div>
+                    </div>
+                    <span class="status-badge badge-queued" id="badge-${i}">Queued</span>
+                </div>
+            `).join('');
+
+            info.classList.add('visible');
+        }
+
+        async function startDownload() {
+            if (!playlistData) return;
+
+            const url = document.getElementById('urlInput').value.trim();
+            const quality = document.getElementById('qualitySelect').value;
+            const downloadBtn = document.getElementById('downloadBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="spinner"></span> Downloading...';
+            pauseBtn.style.display = 'inline-flex';
+            isPaused = false;
+            updatePauseBtn();
+            hideStatus();
+
+            try {
+                const res = await fetch('/api/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url,
+                        quality,
+                        output: 'downloads',
+                        videos: playlistData.videos,
+                    }),
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    showStatus(data.error, 'error-bar');
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = '⬇ Download';
+                    pauseBtn.style.display = 'none';
+                    return;
+                }
+
+                currentJobId = data.job_id;
+                listenProgress(data.job_id);
+            } catch (e) {
+                showStatus('Failed to start download.', 'error-bar');
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '⬇ Download';
+                pauseBtn.style.display = 'none';
+            }
+        }
+
+        async function togglePause() {
+            if (!currentJobId) return;
+
+            const endpoint = isPaused ? 'resume' : 'pause';
+            try {
+                await fetch(`/api/${endpoint}/${currentJobId}`, { method: 'POST' });
+                isPaused = !isPaused;
+                updatePauseBtn();
+                document.getElementById('pauseBanner').classList.toggle('visible', isPaused);
+            } catch (e) {
+                console.error('Pause/resume failed:', e);
+            }
+        }
+
+        function updatePauseBtn() {
+            const btn = document.getElementById('pauseBtn');
+            if (isPaused) {
+                btn.innerHTML = '▶ Resume';
+                btn.className = 'btn btn-resume';
+            } else {
+                btn.innerHTML = '⏸ Pause';
+                btn.className = 'btn btn-pause';
+            }
+        }
+
+        function listenProgress(jobId) {
+            const evtSource = new EventSource(`/api/progress/${jobId}`);
+
+            evtSource.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+
+                if (data.error) {
+                    evtSource.close();
+                    showStatus(data.error, 'error-bar');
+                    return;
+                }
+
+                data.videos.forEach((v, i) => {
+                    const item = document.getElementById(`video-${i}`);
+                    const progress = document.getElementById(`progress-${i}`);
+                    const badge = document.getElementById(`badge-${i}`);
+                    const stats = document.getElementById(`stats-${i}`);
+                    if (!item) return;
+
+                    item.className = 'video-item ' + v.status;
+                    progress.style.width = v.raw_percent + '%';
+
+                    const badgeMap = {
+                        queued: ['Queued', 'badge-queued'],
+                        downloading: [v.percent, 'badge-downloading'],
+                        merging: ['Merging', 'badge-merging'],
+                        done: ['Done ✓', 'badge-done'],
+                        error: ['Error', 'badge-error'],
+                        paused: ['Paused', 'badge-paused'],
+                    };
+                    const [label, cls] = badgeMap[v.status] || ['—', 'badge-queued'];
+                    badge.textContent = label;
+                    badge.className = 'status-badge ' + cls;
+
+                    if (v.status === 'downloading') {
+                        stats.textContent = `${v.speed}  •  ETA: ${v.eta}`;
+                    }
+                });
+
+                if (data.status === 'done') {
+                    evtSource.close();
+                    const doneCount = data.videos.filter(v => v.status === 'done').length;
+                    const errCount = data.videos.filter(v => v.status === 'error').length;
+                    let msg = `✅ Complete! ${doneCount} video${doneCount !== 1 ? 's' : ''} downloaded.`;
+                    if (errCount) msg += ` (${errCount} failed)`;
+                    showStatus(msg, 'success');
+
+                    const btn = document.getElementById('downloadBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '⬇ Download';
+                    document.getElementById('pauseBtn').style.display = 'none';
+                    document.getElementById('pauseBanner').classList.remove('visible');
+                    currentJobId = null;
+                }
+            };
+
+            evtSource.onerror = function () { evtSource.close(); };
+        }
+
+        function showStatus(msg, type) {
+            const bar = document.getElementById('statusBar');
+            bar.textContent = msg;
+            bar.className = 'status-bar visible ' + type;
+        }
+        function hideStatus() {
+            document.getElementById('statusBar').className = 'status-bar';
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        document.getElementById('urlInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') fetchInfo();
+        });
+    </script>
+</body>
+
+</html>
