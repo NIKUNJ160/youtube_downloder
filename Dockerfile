@@ -22,4 +22,4 @@ RUN mkdir -p /app/downloads
 EXPOSE 8080
 
 # Run with gunicorn (threaded for SSE support)
-CMD ["gunicorn", "save:app", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "300"]
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "300"]
