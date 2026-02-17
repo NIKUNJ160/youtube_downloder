@@ -289,6 +289,7 @@ def progress(job_id):
 
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
     print("\n  🌐  YouTube Downloader")
-    print("  🔗  http://localhost:5000\n")
-    app.run(debug=True, host='0.0.0.0', port=5000, threaded=True)
+    print(f"  🔗  http://localhost:{port}\n")
+    app.run(debug=True, host='0.0.0.0', port=port, threaded=True)
